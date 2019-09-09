@@ -9,13 +9,11 @@ exports.onSignup = async (req,res) => {
     
     try{
       const data = await new Credentials({username,password}).save()
-      const token = jwt.sign({id: data._id},SECRET);
       console.log(`Saved: ${data}`)
       res.status(201).json({
         requestResult: 'success',
-        token,
-        body: {
-          user: data
+        user: {
+          data
         }
       });
       console.log('After sending response to client');
