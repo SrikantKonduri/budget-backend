@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const server = express();
 const cors = require('cors');
 
-const routeHandlers = require('./routeHandlers/mainPageRoutes'); 
+const routeHandlers = require('./routeHandlers/AuthController'); 
+const userHandlers = require('./userHandlers/UserController');
 
 server.use(express.json());
 server.use(cors({
@@ -12,9 +13,13 @@ server.use(cors({
  
 server.route(`/signup`)
   .post(routeHandlers.onSignup);
+
 server.route(`/login`)
   .post(routeHandlers.onLogin);
 
+server.route(`/users`)
+  .get(userHandlers.getUserData);
+    
 server.listen(8000,() => {
     console.log(`Listening at 8000`); 
 });
