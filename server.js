@@ -18,8 +18,10 @@ server.route(`/login`)
   .post(routeHandlers.onLogin);
 
 server.route(`/users`)
-  .get(userHandlers.getUserData);
-    
+  .get(userHandlers.getUserData)
+  .post(userHandlers.addItem)
+  .delete(userHandlers.deleteItem);
+  
 server.listen(8000,() => {
     console.log(`Listening at 8000`); 
 });
