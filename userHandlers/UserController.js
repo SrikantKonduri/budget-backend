@@ -5,6 +5,8 @@ const DB = require('../ConnectDB');
 const SECRET = 'THIS-IS-MY-SECRET-KEY-YOU-CANT-CRACK-IT';
 
 exports.addItem = async (req,res) => {
+    console.log('----------Headers--------');
+    console.log(req.headers);
     const {item_type,description,value} = req.body; 
     console.log('---------Body----------');
     console.log(req.body);
@@ -18,22 +20,21 @@ exports.addItem = async (req,res) => {
             console.log('--------New Item-------');
             console.log(newItem);
             res.json({
-                status: 'success',
+                message: 'success',
                 id: newItem._id
             })
         }catch(err){
             console.log(err.message);
-            if(err.message === 'invalid token'){
-                res.json({
-                    status: 'Not Authorized'
-                })
+            if(err.message === 'jwt expired'){
+                res.json({message: 'JWT Expired'})
             }
             else{
-                res.json({
-                    status: 'fail'
-                })
+                res.json({message: 'Not Authorized'})
             }
         }
+    }
+    else{
+        res.json({message: 'Not Authorized'})
     }
 }
 
@@ -55,21 +56,22 @@ exports.getUserData = async (req,res) => {
             console.log('--------Expenses---------');
             console.log(expenses);
             res.json({
+                message: 'success',
                 incomes,
                 expenses,
                 totalSize: items.length
             })
         }catch(err){
-            console.log(err);
-            res.json({
-                status: 'Not Authorized'
-            })
+            if(err.message === 'jwt expired'){
+                res.json({message: 'JWT expired'})
+            }
+            else{
+                res.status(401).json({message: 'Not Authorized'})
+            }
         }
     }
     else{
-        res.json({
-            status: 'You are not authorized to access the content'
-        })
+        res.status(401).json({message: 'Not Authorized'})
     }
 }
 
@@ -83,23 +85,20 @@ exports.deleteItem = async (req,res) => {
             // const user = await DB.getUserById(decodedData.id)
             const isDeleted = await DB.deleteItem(itemId);
             if(isDeleted){
-                res.status(204).json({
-                    status: 'success'
-                })
+                res.status(204).json({message: 'success'})
             }else{
-                res.json({
-                    status: 'fail'
-                })
+                res.json({message: 'fail'})
             }
         }catch(err){
-            res.status(401).json({
-                status: 'Not Authorized'
-            })
+            if(err.message === 'jwt expired'){
+                res.json({message: 'JWT expired'})
+            }
+            else{
+                res.status(401).json({message: 'Not Authorized'})
+            }
         }
     }
     else{
-        res.status(401).json({
-            status: 'Not Authorized'
-        })
+        res.status(401).json({message: 'Not Authorized'})
     }
 }
