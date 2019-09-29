@@ -2,7 +2,6 @@ const DB = require('../ConnectDB');
 const jwt = require('jsonwebtoken');
 const SECRET = 'THIS-IS-MY-SECRET-KEY-YOU-CANT-CRACK-IT';
 
-
 exports.onSignup = async (req,res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -12,7 +11,7 @@ exports.onSignup = async (req,res) => {
       const data = await DB.createNewUser(username,password);
       console.log(`Saved: ${data}`)
       res.status(201).json({
-        requestResult: 'success',
+        message: 'success',
         user: {
           data
         }
@@ -21,7 +20,7 @@ exports.onSignup = async (req,res) => {
     }catch(err){
       console.log(`Error: ${err}`)
       res.json({
-        requestResult: 'fail'
+        message: 'fail'
       })
     }
 }
@@ -32,13 +31,16 @@ exports.onLogin = async (req,res) => {
     const result = await DB.verifyUser(username,password);
     console.log(result);
     if(result.userExist){
-      const token = jwt.sign({id: result._id},SECRET);
+      const token = jwt.sign({id: result._id},SECRET,{expiresIn: '30m'});
+      
       res.json({
-        serverRes: 'success',
-        token
+        message: 'success',
+        token,
+        user: username.split('@')[0],
+        ea: 30 * 60
       });
     }
     else{
-      res.json({serverRes: 'fail'});
+      res.json({message: 'fail'});
     }
 }
