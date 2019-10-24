@@ -17,6 +17,9 @@ const credentialsSchema = new mongoose.Schema({
     password: {
        type: String,
        required: [true,'Please provide valid password']
+    },
+    avatarFileName: {
+        type: String
     }
 });
 
@@ -41,9 +44,42 @@ const budgetSchema = new mongoose.Schema({
     } 
 });
 
+const userInfoSchema = new mongoose.Schema({
+    uid:{
+        type: String,
+        unique: true
+    },
+    name:{
+        type: String,
+        default: ''
+    },
+    phone:{
+        type: String,     
+        default: ''
+    },
+    address:{
+        type: String,
+        maxlength: 50,
+        default: ''
+    },
+    country:{
+        type: String,
+        default: ''
+    },
+    job:{
+        type: String,
+        default: ''
+    },
+    income: {
+        type: Number,
+        default: -1
+    }
+}) 
+
 //Creating collections
 const Credentials = mongoose.model('Credentials',credentialsSchema);
 const User_items = mongoose.model('User_items',budgetSchema);
+const User_info = mongoose.model('User_info',userInfoSchema);
 
 //Authentcation
 exports.createNewUser = (username,password) => {
@@ -66,6 +102,16 @@ exports.getUserById = async (id) => {
     return data.username.split('@')[0];
 }
 
+exports.setAvatarFileName = async (avatarFileName) => {
+    return Credentials.findByIdAndUpdate(`${avatarFileName.split('.')[0]}`,{avatarFileName})
+}
+
+exports.getAvatarFileName =  async (id) => {
+    const userCred =  await Credentials.findById(id);
+    console.log('FN',userCred.avatarFileName);
+    return userCred.avatarFileName;
+}
+
 exports.getData = async (user) => {
     console.log(`=`);
     const data = await User_items.find({user});
@@ -84,6 +130,26 @@ exports.deleteItem = async (itemId) => {
     console.log(deleted);
     if(deleted){return 1;}
     else{return 0;}
+}
+
+exports.getUserInfo = async (uid) => {
+    const info = await User_info.find({uid})
+    return info;
+}
+
+exports.insertUserInfo = async (userInfo) => {
+    return new User_info(userInfo).save()
+}
+
+exports.updateUserInfo = async (uid,userInfo) => {
+    const update_info =  await User_info.findOneAndUpdate({uid},userInfo,{new: true})
+    return update_info;
+}
+
+exports.userExistsInUserInfo = async (uid) => {
+    const query_res = await User_info.findOne({uid})
+    // console.log('----------Query_res--------',query_res);
+    return query_res;
 }
 // credentialsSchema.pre('save',async function (next){
 //     if(!this.isModified('password')) return next();
