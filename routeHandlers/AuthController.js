@@ -36,6 +36,7 @@ exports.onLogin = async (req,res) => {
       res.json({
         message: 'success',
         token,
+        id: result._id,
         user: username.split('@')[0],
         ea: 30 * 60
       });
