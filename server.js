@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const server = express();
 const cors = require('cors');
 const multer = require('multer');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const storage = multer.diskStorage({
   destination: (req,file,cb) => {
     cb(null,'./uploads/');
@@ -28,10 +29,15 @@ server.route(`/signup`)
 server.route(`/login`)
   .post(routeHandlers.onLogin);
 
-server.route(`/users`)
+server.route(`/users/:yearMonth`)
   .get(userHandlers.getUserData)
+
+server.route('/users')
   .post(userHandlers.addItem)
   .delete(userHandlers.deleteItem);
+  
+server.route('/users/downloads')
+  .post(userHandlers.getStatement);
 
 server.route('/profile/:uid')
   .get(userHandlers.getProfile) 
@@ -46,5 +52,3 @@ server.route('/upload')
 server.listen(8000,() => {
     console.log(`Listening at 8000`); 
 });
-
-
