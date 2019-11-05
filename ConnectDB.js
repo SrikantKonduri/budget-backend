@@ -41,6 +41,9 @@ const budgetSchema = new mongoose.Schema({
         type: Number,
         min: 1,
         required: true
+    },
+    item_date: {
+        type: Date
     } 
 });
 
@@ -112,9 +115,16 @@ exports.getAvatarFileName =  async (id) => {
     return userCred.avatarFileName;
 }
 
-exports.getData = async (user) => {
-    console.log(`=`);
-    const data = await User_items.find({user});
+exports.getData = async (user,yearMonth) => {
+    console.log(`=`,yearMonth);
+    const daysInSelectedMonth = new Date(yearMonth.split('-')[0],yearMonth.split('-')[1], 0).getDate();
+    const data = await User_items.find({
+        user,
+        item_date: {
+            $gte: `${yearMonth}-01`,
+            $lte: `${yearMonth}-${daysInSelectedMonth}`
+        }
+    });
     console.log(data);
     return data;
 }
@@ -151,6 +161,43 @@ exports.userExistsInUserInfo = async (uid) => {
     // console.log('----------Query_res--------',query_res);
     return query_res;
 }
+
+exports.getLast30DaysUserItems = async (user,type) => {
+    let curMonth = new Date().getMonth()+1;
+    let curDate = new Date().getDate();
+    if(`${curMonth}`.length === 1){
+        curMonth = `0${curMonth}`;
+    }
+    if(`${curDate}`.length === 1){
+        curDate = `0${curDate}`;
+    }
+    if(type === '+' || type === '-'){
+        const items = await User_items.find({
+            user,
+            item_type: type,
+            item_date: {
+                $gte: new Date((new Date().getTime() - (30*24*60*60*1000))),
+                $lte: `${new Date().getFullYear()}-${curMonth}-${curDate}`
+            }
+        });
+        console.log('-------Items-----',items);
+        // console.log('CUR DATE',`${new Date().getFullYear()}-${curMonth}-${curDate}`);
+        console.log('d',curDate+'');
+        return items;
+    }
+    else{
+        const items = await User_items.find({
+            user,
+            item_date: {
+                $gte: new Date((new Date().getTime() - (31*24*60*60*1000))),
+                $lte: `${new Date().getFullYear()}-${curMonth}-${curDate}`
+            }
+        });
+        console.log('-------Items-----',items);
+        return items;
+    }
+}
+
 // credentialsSchema.pre('save',async function (next){
 //     if(!this.isModified('password')) return next();
 //     this.password = await bcrypt.hash(this.password,12);
