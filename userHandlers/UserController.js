@@ -4,13 +4,14 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs'); 
 const path = require('path');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const DB = require('../ConnectDB');
 const SECRET = 'THIS-IS-MY-SECRET-KEY-YOU-CANT-CRACK-IT';
 
 exports.addItem = async (req,res) => {
     console.log('----------Headers--------');
     console.log(req.headers);
-    const {item_type,description,value} = req.body; 
+    const {item_type,description,value,item_date} = req.body; 
     console.log('---------Body----------');
     console.log(req.body);
     if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
@@ -19,7 +20,7 @@ exports.addItem = async (req,res) => {
         try{
             const decodedData = await promisify(jwt.verify)(token,SECRET);
             const user = await DB.getUserById(decodedData.id);
-            const newItem = await DB.insertData({user,item_type,description,value})
+            const newItem = await DB.insertData({user,item_type,description,value,item_date})
             console.log('--------New Item-------');
             console.log(newItem);
             res.json({
@@ -43,7 +44,7 @@ exports.addItem = async (req,res) => {
 
 exports.getUserData = async (req,res) => {
     console.log(`HEADERS: `,req.headers);
-    console.log(`BODY: `,req.body);
+    console.log(`PARAMS: `,req.params);
     if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
         const token = req.headers.authorization.split(' ')[1];
         console.log(`Token: ${token}`);
@@ -51,7 +52,7 @@ exports.getUserData = async (req,res) => {
             const decodedData = await promisify(jwt.verify)(token,SECRET);
             console.log('Decoded:',decodedData);
             const user = await DB.getUserById(decodedData.id);
-            const items = await DB.getData(user);
+            const items = await DB.getData(user,req.params.yearMonth);
             const incomes = items.filter(item => item.item_type === '+');
             const expenses = items.filter(item => item.item_type === '-');
             console.log('--------Incomes------');
@@ -218,7 +219,74 @@ exports.uploadAvatar = async (req,res) => {
             console.log( await DB.setAvatarFileName(req.file.originalname));
             res.json({status: 'success'})
         }catch(err){
-            res.json({status: 'failure'})
+            res.status(401).json({status: 'failure'})
         }
+    }
+    else
+        res.status(401).json({status: 'Not Authorized'})
+}
+
+exports.getStatement = async (req,res) => {
+    console.log(req.body);
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+        const token = req.headers.authorization.split(' ')[1];
+        try{
+            const decoded_Data = await promisify(jwt.verify)(token,SECRET);
+            const user = await DB.getUserById(decoded_Data.id);
+            const {type} = req.body;
+            console.log('USER',user);
+            if(type === 'inc'){
+                console.log('flag');
+                const filtered_items= await DB.getLast30DaysUserItems(user,'+');
+                const csvWriter = createCsvWriter({
+                    path: `./User Docs/inc${decoded_Data.id}.csv`,
+                    header: [
+                      {id: 'description',title: 'TITLE'},
+                      {id: 'value',title: 'VALUE'},
+                      {id: 'item_date',title: 'DATE'}
+                    ]
+                  });
+                const records = filtered_items;
+                const writeStatus = await csvWriter.writeRecords(records)
+                res.setHeader('Content-Type','application/csv')
+                res.download(`./User Docs/inc${decoded_Data.id}.csv`);
+            }                  
+            else if(type === 'exp'){
+                const filtered_items= await DB.getLast30DaysUserItems(user,'-')
+                const csvWriter = createCsvWriter({
+                    path: `./User Docs/exp${decoded_Data.id}.csv`,
+                    header: [
+                      {id: 'description',title: 'TITLE'},
+                      {id: 'value',title: 'VALUE'},
+                      {id: 'item_date',title: 'DATE'}
+                    ]
+                  });
+                const records = filtered_items;
+                const writeStatus = await csvWriter.writeRecords(records)
+                res.setHeader('Content-Type','application/csv')
+                res.download(`./User Docs/exp${decoded_Data.id}.csv`);
+            }
+            else{
+                const filtered_items= await DB.getLast30DaysUserItems(user,'both');
+                const csvWriter = createCsvWriter({
+                    path: `./User Docs/${decoded_Data.id}.csv`,
+                    header: [
+                      {id: 'item_type',title: 'TYPE'},
+                      {id: 'description',title: 'TITLE'},
+                      {id: 'value',title: 'VALUE'},
+                      {id: 'item_date',title: 'DATE'}
+                    ]
+                  });
+                const records = filtered_items;
+                const writeStatus = await csvWriter.writeRecords(records)
+                res.setHeader('Content-Type','application/csv')
+                res.download(`./User Docs/${decoded_Data.id}.csv`);
+            }
+        }catch(err){
+            console.log('ERROR:',err.message)
+        }
+    }
+    else{
+        res.status(401).json({status: 'Not Authorized'});
     }
 }
