@@ -10,9 +10,14 @@
   "author": "Srikant Konduri",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "content-disposition": "^0.5.3",
     "cors": "^2.8.5",
+    "csv-writer": "^1.5.0",
     "express": "^4.17.1",
-    "mongoose": "^5.6.11"
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.6.11",
+    "multer": "^1.4.2"
   },
   "devDependencies": {
     "nodemon": "^1.19.1"

@@ -2,60 +2,53 @@ const express = require('express');
 const mongoose = require('mongoose');
 const server = express();
 const cors = require('cors');
-const url = 'http://localhost:8000';
-server.use(express.json());
-
-var corsOptions = {
-  origin: 'http://localhost:3000',
-  optionsSuccessStatus: 200 
-}
-
-mongoose.connect('mongodb://localhost:27017/budget',{
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false
-}).then(() => console.log('Connection Established!')).catch(() => console.log('Something went wrong...'))
-
-const credentialsSchema = new mongoose.Schema({
-    username: {
-       type: String,
-       required: [true,'Give us a valid username'],
-       unique: [true,'This username is already taken, please choose another username']
-    },
-    password: {
-       type: String,
-       required: [true,'Please provide valid password']
-    }
+const multer = require('multer');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const storage = multer.diskStorage({
+  destination: (req,file,cb) => {
+    cb(null,'./uploads/');
+  },
+  filename: (req,file,cb) => {
+    cb(null,file.originalname)
+  }
+})
+const upload = multer({
+  storage
 });
-const Credentials = mongoose.model('Credentials',credentialsSchema);
+const routeHandlers = require('./routeHandlers/AuthController'); 
+const userHandlers = require('./userHandlers/UserController');
+
+server.use(express.json());
+server.use(cors({
+  origin: 'http://localhost:3000'
+}));
+ 
+server.route(`/signup`)
+  .post(routeHandlers.onSignup);
+
+server.route(`/login`)
+  .post(routeHandlers.onLogin);
+
+server.route(`/users/:yearMonth`)
+  .get(userHandlers.getUserData)
+
+server.route('/users')
+  .post(userHandlers.addItem)
+  .delete(userHandlers.deleteItem);
+  
+server.route('/users/downloads')
+  .post(userHandlers.getStatement);
+
+server.route('/profile/:uid')
+  .get(userHandlers.getProfile) 
+  .post(userHandlers.addProfile)
+
+server.route('/profile')
+  .post(userHandlers.getAvatar)
+  
+server.route('/upload')
+  .post(upload.single('avatar'),userHandlers.uploadAvatar);
 
 server.listen(8000,() => {
     console.log(`Listening at 8000`); 
 });
-
-server.use((response,request,next) => {
-    cors(corsOptions);
-    next();
-});
-server.route(`/signup`)
-  .post((req,res) => {
-    const username = req.body.username;
-    const password = req.body.password;
-    new Credentials({username,password}).save()
-      .then(response => {
-        console.log(`Saved: ${response}`)
-        res.json({
-          requestResult: 'success'
-        })
-      })
-      .catch(err => {
-        console.log(`Error: ${err}`)
-        res.status(400).json({
-          requestResult: 'fail'
-        })
-      });
-  });
-server.route(`/login`)
-  .post((req,res) => {
-      
-  });
